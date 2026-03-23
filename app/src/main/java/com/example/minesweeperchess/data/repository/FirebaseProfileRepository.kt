@@ -1,9 +1,11 @@
 package com.example.minesweeperchess.data.repository
 
+import android.R
 import android.net.Uri
 import com.example.minesweeperchess.domain.model.User
 import com.example.minesweeperchess.domain.repository.ProfileRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -20,8 +22,9 @@ class FirebaseProfileRepository @Inject constructor(
         Result.failure(e)
     }
 
-    override suspend fun getProfile(uid: String): User? = try {
-        firestore.collection("users").document(uid).get().await()
+    override suspend fun getProfile(uid: String, fromServer: Boolean): User? = try {
+        firestore.collection("users").document(uid)
+            .get(if (fromServer) Source.SERVER else Source.DEFAULT).await()
             .toObject(User::class.java)
     } catch (e: Exception) {
         null

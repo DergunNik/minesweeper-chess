@@ -1,8 +1,10 @@
 package com.example.minesweeperchess.di
 
 import com.example.minesweeperchess.data.repository.FirebaseAuthRepository
+import com.example.minesweeperchess.data.repository.FirebaseGameRepository
 import com.example.minesweeperchess.data.repository.FirebaseProfileRepository
 import com.example.minesweeperchess.domain.repository.AuthRepository
+import com.example.minesweeperchess.domain.repository.GameRepository
 import com.example.minesweeperchess.domain.repository.ProfileRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -42,5 +44,13 @@ object AppModule {
         storage: FirebaseStorage
     ): ProfileRepository {
         return FirebaseProfileRepository(firestore, storage)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGameRepository(
+        firestore: FirebaseFirestore
+    ): GameRepository {
+        return FirebaseGameRepository(firestore)
     }
 }

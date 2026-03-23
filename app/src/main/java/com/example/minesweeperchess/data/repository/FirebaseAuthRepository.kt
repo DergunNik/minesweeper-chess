@@ -4,7 +4,7 @@ import com.example.minesweeperchess.domain.model.User
 import com.example.minesweeperchess.domain.repository.AuthRepository
 import com.example.minesweeperchess.domain.repository.AuthResult
 import com.google.firebase.auth.FirebaseAuth
-import javax.inject.Inject // Не забудь импорт
+import javax.inject.Inject
 
 class FirebaseAuthRepository @Inject constructor(
     private val auth: FirebaseAuth
@@ -12,7 +12,7 @@ class FirebaseAuthRepository @Inject constructor(
 
     override val currentUser: User?
         get() = auth.currentUser?.let { firebaseUser ->
-            User(id = firebaseUser.uid, email = firebaseUser.email)
+            User(id = firebaseUser.uid, email = firebaseUser.email.orEmpty())
         }
 
     override fun signIn(email: String, pass: String, onResult: (AuthResult) -> Unit) {

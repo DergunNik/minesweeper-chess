@@ -1,0 +1,40 @@
+package com.example.minesweeperchess.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.minesweeperchess.domain.repository.AuthRepository
+import com.example.minesweeperchess.domain.repository.GameRepository
+import com.example.minesweeperchess.ui.state.LobbyUiState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class LobbyViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val gameRepository: GameRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(LobbyUiState())
+    val uiState = _uiState.asStateFlow()
+
+    fun toggleModeSelection(show: Boolean) {
+        _uiState.update { it.copy(showModeSelection = show) }
+    }
+
+    fun startPvPGame() {
+        val userId = authRepository.currentUser?.id ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = gameRepository.createGame(userId)
+            result.onSuccess { id ->
+                _uiState.update { it.copy(isLoading = false, gameId = id) }
+            }.onFailure { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+}

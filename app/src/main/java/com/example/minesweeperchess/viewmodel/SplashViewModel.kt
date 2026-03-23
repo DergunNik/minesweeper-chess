@@ -25,11 +25,13 @@ class SplashViewModel @Inject constructor(
 
     private fun checkDestination() {
         viewModelScope.launch {
+            kotlinx.coroutines.delay(500)
+
             val user = authRepository.currentUser
             if (user == null) {
                 _navigationEvent.emit("auth")
             } else {
-                val profile = profileRepository.getProfile(user.id)
+                val profile = profileRepository.getProfile(user.id, true)
                 if (profile != null && profile.nickname.isNotBlank()) {
                     _navigationEvent.emit("lobby")
                 } else {
