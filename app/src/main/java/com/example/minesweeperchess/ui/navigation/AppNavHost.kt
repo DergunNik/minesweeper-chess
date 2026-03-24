@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import com.example.minesweeperchess.ui.screen.AuthScreen
 import com.example.minesweeperchess.ui.screen.LobbyScreen
 import com.example.minesweeperchess.ui.screen.ProfileScreen
+import com.example.minesweeperchess.ui.screen.SettingsScreen
 import com.example.minesweeperchess.ui.screen.SplashScreen
 
 @Composable
@@ -60,7 +61,7 @@ fun AppNavHost(
                     navController.navigate(Screen.Profile.route)
                 },
                 onNavigateToSettings = {
-                    navController.navigate(Screen.Profile.route)
+                    navController.navigate(Screen.Settings.route)
                 },
                 onGameCreated = { gameId ->
                     navController.navigate(Screen.Game.createRoute(gameId))
@@ -71,6 +72,10 @@ fun AppNavHost(
         composable(Screen.Game.route) { backStackEntry ->
             val gameId = backStackEntry.arguments?.getString("gameId") ?: "ID не найден"
             androidx.compose.material3.Text("Игра номер: $gameId")
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(onBack = { navController.popBackStack() })
         }
     }
 }
