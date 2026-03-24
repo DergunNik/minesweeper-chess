@@ -36,31 +36,41 @@ fun AppNavHost(
             })
         }
 
-        composable(Screen.Profile.route) {
-            ProfileScreen(onProfileSaved = {
-                navController.navigate(Screen.Lobby.route) {
-                    popUpTo(Screen.Profile.route) { inclusive = true }
+        composable(Screen.Profile.route) { backStackEntry ->
+            val isFromLobby = navController.previousBackStackEntry?.destination?.route == Screen.Lobby.route
+
+            ProfileScreen(
+                canGoBack = isFromLobby,
+                onBack = { navController.popBackStack() },
+                onProfileSaved = {
+                    if (isFromLobby) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate(Screen.Lobby.route) {
+                            popUpTo(Screen.Profile.route) { inclusive = true }
+                        }
+                    }
                 }
-            })
+            )
         }
 
         composable(Screen.Lobby.route) {
-            androidx.compose.material3.Text("Добро пожаловать в Лобби!")
+            LobbyScreen(
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route)
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Profile.route)
+                },
+                onGameCreated = { gameId ->
+                    navController.navigate(Screen.Game.createRoute(gameId))
+                }
+            )
         }
 
         composable(Screen.Game.route) { backStackEntry ->
             val gameId = backStackEntry.arguments?.getString("gameId") ?: "ID не найден"
             androidx.compose.material3.Text("Игра номер: $gameId")
-        }
-
-        composable(Screen.Lobby.route) {
-            LobbyScreen(
-                onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
-                onNavigateToSettings = { /* TODO: добавить настройки */ },
-                onGameCreated = { gameId ->
-                    navController.navigate(Screen.Game.createRoute(gameId))
-                }
-            )
         }
     }
 }

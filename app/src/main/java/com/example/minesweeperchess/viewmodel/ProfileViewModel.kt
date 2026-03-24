@@ -29,6 +29,34 @@ class ProfileViewModel @Inject constructor(
         "https://api.dicebear.com/7.x/bottts/svg?seed=Aneka"
     )
 
+    init {
+        loadUserProfile()
+    }
+
+    private fun loadUserProfile() {
+        val currentUid = authRepository.currentUser?.id ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val user = profileRepository.getProfile(currentUid)
+
+            if (user != null) {
+                _uiState.update { it.copy(
+                    nickname = user.nickname,
+                    avatarUrl = user.avatarUrl,
+                    isLoading = false
+                ) }
+            } else {
+                val authName = authRepository.currentUser?.nickname ?: ""
+                _uiState.update { it.copy(
+                    nickname = authName,
+                    isLoading = false
+                ) }
+            }
+        }
+    }
+
     fun onNicknameChange(newName: String) {
         _uiState.update { it.copy(nickname = newName) }
     }
