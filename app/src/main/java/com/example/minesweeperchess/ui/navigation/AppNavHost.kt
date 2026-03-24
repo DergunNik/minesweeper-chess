@@ -5,11 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.minesweeperchess.ui.screen.AuthScreen
-import com.example.minesweeperchess.ui.screen.LobbyScreen
-import com.example.minesweeperchess.ui.screen.ProfileScreen
-import com.example.minesweeperchess.ui.screen.SettingsScreen
-import com.example.minesweeperchess.ui.screen.SplashScreen
+import com.example.minesweeperchess.ui.screen.*
 
 @Composable
 fun AppNavHost(
@@ -31,15 +27,14 @@ fun AppNavHost(
 
         composable(Screen.Auth.route) {
             AuthScreen(onNavigateToMain = {
-                navController.navigate(Screen.Splash.route) {
+                navController.navigate(Screen.Profile.route) {
                     popUpTo(Screen.Auth.route) { inclusive = true }
                 }
             })
         }
 
-        composable(Screen.Profile.route) { backStackEntry ->
+        composable(Screen.Profile.route) {
             val isFromLobby = navController.previousBackStackEntry?.destination?.route == Screen.Lobby.route
-
             ProfileScreen(
                 canGoBack = isFromLobby,
                 onBack = { navController.popBackStack() },
@@ -55,27 +50,54 @@ fun AppNavHost(
             )
         }
 
+        composable(Screen.Settings.route) {
+            SettingsScreen(onBack = { navController.popBackStack() })
+        }
+
         composable(Screen.Lobby.route) {
             LobbyScreen(
-                onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.route)
-                },
-                onNavigateToSettings = {
-                    navController.navigate(Screen.Settings.route)
-                },
+                onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onNavigateToModeSelection = { navController.navigate(Screen.ModeSelection.route) },
                 onGameCreated = { gameId ->
                     navController.navigate(Screen.Game.createRoute(gameId))
                 }
             )
         }
 
-        composable(Screen.Game.route) { backStackEntry ->
-            val gameId = backStackEntry.arguments?.getString("gameId") ?: "ID не найден"
-            androidx.compose.material3.Text("Игра номер: $gameId")
+        composable(Screen.ModeSelection.route) {
+            ModeSelectionScreen(
+                onBack = { navController.popBackStack() },
+                onGameCreated = { gameId ->
+                    navController.navigate(Screen.WaitingRoom.createRoute(gameId)) {
+                        popUpTo(Screen.ModeSelection.route) { inclusive = true }
+                    }
+                },
+                onJoinedGame = { gameId ->
+                    navController.navigate(Screen.Game.createRoute(gameId)) {
+                        popUpTo(Screen.ModeSelection.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
-        composable(Screen.Settings.route) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+        composable(Screen.WaitingRoom.route) { backStackEntry ->
+            val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
+            WaitingRoomScreen(
+                gameId = gameId,
+                onBack = {
+                    // TODO: viewModel.leaveGame()
+                    navController.popBackStack()
+                }
+            )
         }
+
+//        composable(Screen.Game.route) { backStackEntry ->
+//            val gameId = backStackEntry.arguments?.getString("gameId") ?: "ID не найден"
+//            GameScreen(
+//                gameId = gameId,
+//                onQuit = { navController.popBackStack(Screen.Lobby.route, false) }
+//            )
+//        }
     }
 }

@@ -37,4 +37,17 @@ class LobbyViewModel @Inject constructor(
             }
         }
     }
+
+    fun joinGame(gameId: String) {
+        val userId = authRepository.currentUser?.id ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            val result = gameRepository.joinGame(gameId, userId)
+            result.onSuccess {
+                _uiState.update { it.copy(isLoading = false, gameId = gameId, isJoined = true) }
+            }.onFailure { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
 }

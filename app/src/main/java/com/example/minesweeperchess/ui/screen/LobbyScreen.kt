@@ -20,6 +20,7 @@ fun LobbyScreen(
     viewModel: LobbyViewModel = hiltViewModel(),
     onNavigateToProfile: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToModeSelection: () -> Unit,
     onGameCreated: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -38,7 +39,7 @@ fun LobbyScreen(
         Spacer(modifier = Modifier.height(48.dp))
 
         MenuButton("Играть", Icons.Default.PlayArrow) {
-            viewModel.toggleModeSelection(true)
+            onNavigateToModeSelection()
         }
 
         MenuButton("Профиль", Icons.Default.Person) {
@@ -49,26 +50,12 @@ fun LobbyScreen(
             onNavigateToSettings()
         }
 
-        if (uiState.showModeSelection) {
-            AlertDialog(
-                onDismissRequest = { viewModel.toggleModeSelection(false) },
-                title = { Text("Выберите режим") },
-                text = { Text("Пока доступен только PvP режим (через ID игры)") },
-                confirmButton = {
-                    Button(onClick = { viewModel.startPvPGame() }) {
-                        Text("PvP Режим")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.toggleModeSelection(false) }) {
-                        Text("Отмена")
-                    }
-                }
-            )
-        }
-
         if (uiState.isLoading) {
             CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
+        }
+
+        uiState.error?.let {
+            Text(text = it, color = MaterialTheme.colorScheme.error)
         }
     }
 }

@@ -9,4 +9,8 @@ sealed class Screen(val route: String) {
         fun createRoute(gameId: String) = "game/$gameId"
     }
     object Settings : Screen("settings")
+    object ModeSelection : Screen("mode_selection")
+    object WaitingRoom : Screen("waiting_room/{gameId}") {
+        fun createRoute(gameId: String) = "waiting_room/$gameId"
+    }
 }

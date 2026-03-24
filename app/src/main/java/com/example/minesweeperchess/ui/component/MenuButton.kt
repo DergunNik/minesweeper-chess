@@ -15,10 +15,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun MenuButton(text: String, icon: ImageVector, onClick: () -> Unit) {
+fun MenuButton(text: String, icon: ImageVector, enabled: Boolean = true, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).height(56.dp),
+        enabled = enabled,
         shape = MaterialTheme.shapes.medium
     ) {
         Icon(icon, contentDescription = null)
