@@ -2,6 +2,11 @@ package com.example.minesweeperchess.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.minesweeperchess.domain.logic.BoardLogic
+import com.example.minesweeperchess.domain.model.GameMode
+import com.example.minesweeperchess.domain.model.GameState
+import com.example.minesweeperchess.domain.model.GameStatus
+import com.example.minesweeperchess.domain.model.PieceColor
 import com.example.minesweeperchess.domain.repository.AuthRepository
 import com.example.minesweeperchess.domain.repository.GameRepository
 import com.example.minesweeperchess.ui.state.LobbyUiState
@@ -25,13 +30,23 @@ class LobbyViewModel @Inject constructor(
         _uiState.update { it.copy(showModeSelection = show) }
     }
 
-    fun startPvPGame() {
+    fun startPvPGame(selectedMode: GameMode) {
         val userId = authRepository.currentUser?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val result = gameRepository.createGame(userId)
+
+            val initialBoard = BoardLogic.createInitialBoard(selectedMode)
+            val initialState = GameState(
+                mode = selectedMode,
+                board = initialBoard,
+                currentTurn = PieceColor.WHITE,
+                status = GameStatus.PLAYING
+            )
+
+            val result = gameRepository.createGame(userId, initialState)
+
             result.onSuccess { id ->
-                _uiState.update { it.copy(isLoading = false, gameId = id) }
+                _uiState.update { it.copy(isLoading = false, gameId = id, showModeSelection = false) }
             }.onFailure { e ->
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }

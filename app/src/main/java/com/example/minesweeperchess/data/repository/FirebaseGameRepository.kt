@@ -1,6 +1,7 @@
 package com.example.minesweeperchess.data.repository
 
 import com.example.minesweeperchess.domain.model.GameSession
+import com.example.minesweeperchess.domain.model.GameState
 import com.example.minesweeperchess.domain.repository.GameRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
@@ -15,7 +16,7 @@ class FirebaseGameRepository @Inject constructor(
 
     private val gamesCollection = firestore.collection("games")
 
-    override suspend fun createGame(userId: String): Result<String> = try {
+    override suspend fun createGame(userId: String, initialState: GameState): Result<String> = try {
         var finalGameId: String? = null
 
         for (attempt in 1..5) {
@@ -23,7 +24,12 @@ class FirebaseGameRepository @Inject constructor(
             val doc = gamesCollection.document(tempId).get().await()
 
             if (!doc.exists()) {
-                val newGame = GameSession(gameId = tempId, creatorId = userId, status = "LOBBY")
+                val newGame = GameSession(
+                    gameId = tempId,
+                    creatorId = userId,
+                    status = "LOBBY",
+                    state = initialState
+                )
                 gamesCollection.document(tempId).set(newGame).await()
                 finalGameId = tempId
                 break
@@ -33,7 +39,7 @@ class FirebaseGameRepository @Inject constructor(
         if (finalGameId != null) {
             Result.success(finalGameId)
         } else {
-            Result.failure(Exception("Не удалось найти свободный ID за 5 попыток"))
+            Result.failure(Exception("Не удалось найти свободный ID"))
         }
     } catch (e: Exception) {
         Result.failure(e)
@@ -45,7 +51,7 @@ class FirebaseGameRepository @Inject constructor(
         if (snapshot.exists()) {
             val game = snapshot.toObject(GameSession::class.java)
             if (game == null) {
-                Result.failure(Exception("Внутренняя ошибка при обработке игры"))
+                Result.failure(Exception("Ошибка обработки данных"))
             }
             else if (game.guestId != null) {
                 Result.failure(Exception("Игра уже заполнена"))

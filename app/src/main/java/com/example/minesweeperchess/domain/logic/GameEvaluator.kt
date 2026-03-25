@@ -5,11 +5,17 @@ import com.example.minesweeperchess.domain.model.*
 object GameEvaluator {
 
     fun evaluate(state: GameState): GameStatus {
-        return when (state.mode) {
+        val baseStatus = when (state.mode) {
             GameMode.MINESWEEPER -> evaluateMinesweeper(state)
             GameMode.CHESS -> evaluateChess(state)
             GameMode.CHESS_MINESWEEPER -> evaluateHybrid(state)
         }
+
+        if (baseStatus == GameStatus.PLAYING && state.board.any { it.isMined && it.isRevealed }) {
+            return GameStatus.MINESWEEPER_LOSS
+        }
+
+        return baseStatus
     }
 
     private fun evaluateMinesweeper(state: GameState): GameStatus {
@@ -54,18 +60,19 @@ object GameEvaluator {
 
         return board.filter { it.piece?.color == opponentColor }.any { cell ->
             val piece = cell.piece!!
-            MoveValidator.getValidMoves(piece, board, size).contains(kingPos)
+            MoveValidator.getValidMoves(piece, cell.position, board, size).contains(kingPos)
         }
     }
 
     private fun hasAnyLegalMoves(color: PieceColor, state: GameState): Boolean {
-        val pieces = state.board.filter { it.piece?.color == color }
-        for (cell in pieces) {
+        val pieceCells = state.board.filter { it.piece?.color == color }
+        for (cell in pieceCells) {
             val piece = cell.piece!!
-            val potentialMoves = MoveValidator.getValidMoves(piece, state.board, state.boardSize)
+            val currentPos = cell.position
+            val potentialMoves = MoveValidator.getValidMoves(piece, currentPos, state.board, state.boardSize)
 
-            for (move in potentialMoves) {
-                val tempBoard = simulateMove(state.board, piece.position, move)
+            for (targetPos in potentialMoves) {
+                val tempBoard = simulateMove(state.board, currentPos, targetPos)
                 if (!isKingUnderAttack(color, tempBoard, state.boardSize)) {
                     return true
                 }
@@ -79,7 +86,7 @@ object GameEvaluator {
         return board.map { cell ->
             when (cell.position) {
                 from -> cell.copy(piece = null)
-                to -> cell.copy(piece = movingPiece.copy(position = to))
+                to -> cell.copy(piece = movingPiece)
                 else -> cell
             }
         }

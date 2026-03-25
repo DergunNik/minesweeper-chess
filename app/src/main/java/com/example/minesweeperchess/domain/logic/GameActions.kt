@@ -69,7 +69,7 @@ object GameActions {
                     if (isExplosion) {
                         cell.copy(piece = null, isRevealed = true)
                     } else {
-                        cell.copy(piece = movingPiece.copy(position = to), isRevealed = true)
+                        cell.copy(piece = movingPiece, isRevealed = true)
                     }
                 }
                 else -> cell

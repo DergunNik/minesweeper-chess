@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.minesweeperchess.domain.model.GameMode
 import com.example.minesweeperchess.ui.component.MenuButton
 import com.example.minesweeperchess.viewmodel.LobbyViewModel
 
@@ -59,7 +60,7 @@ fun ModeSelectionScreen(
             MenuButton(
                 text = "Создать лобби",
                 icon = Icons.Default.PlayArrow,
-                onClick = { viewModel.startPvPGame() }
+                onClick = { viewModel.startPvPGame(GameMode.CHESS_MINESWEEPER) }
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))

@@ -2,54 +2,142 @@ package com.example.minesweeperchess.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.minesweeperchess.domain.model.*
+import com.example.minesweeperchess.ui.component.BoardComponent
 
 @Composable
 fun GameScreen(
     gameId: String,
-    onQuit: () -> Unit
+    onQuit: () -> Unit,
+    viewModel: GameViewModel = hiltViewModel()
 ) {
+    val gameState by viewModel.gameState.collectAsState()
+    val selectedPosition by viewModel.selectedPosition.collectAsState()
+    val validMoves by viewModel.validMoves.collectAsState()
+
+    LaunchedEffect(gameId) {
+        viewModel.initGame(gameId)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Game ID: $gameId",
-            style = MaterialTheme.typography.headlineSmall
+        GameHeader(gameId = gameId, state = gameState)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        BoardComponent(
+            state = gameState,
+            selectedPosition = selectedPosition,
+            validMoves = validMoves,
+            onCellClick = { pos -> viewModel.onCellClick(pos) },
+            onCellLongClick = { pos -> viewModel.onCellLongClick(pos) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Box(
+        MoveHistoryList(
+            moves = gameState.moveHistory,
             modifier = Modifier
-                .size(320.dp)
-                .background(Color.DarkGray),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Board Component Placeholder",
-                color = Color.White
-            )
-        }
+                .fillMaxWidth()
+                .height(120.dp)
+        )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = onQuit,
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer
             ),
-            modifier = Modifier.fillMaxWidth(0.7f)
+            modifier = Modifier.fillMaxWidth(0.6f),
+            shape = RoundedCornerShape(8.dp)
         ) {
-            Text("Quit Game")
+            Text("Выйти из игры")
+        }
+    }
+}
+
+@Composable
+fun GameHeader(gameId: String, state: GameState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = "ID: $gameId", style = MaterialTheme.typography.labelMedium)
+
+            val statusText = when (state.status) {
+                GameStatus.PLAYING -> "Ход: ${if (state.currentTurn == PieceColor.WHITE) "Белых" else "Черных"}"
+                GameStatus.WHITE_WIN_CHECKMATE -> "Мат! Белые победили"
+                GameStatus.BLACK_WIN_CHECKMATE -> "Мат! Черные победили"
+                GameStatus.MINESWEEPER_LOSS -> "БУМ! Вы подорвались"
+                GameStatus.MINESWEEPER_WIN -> "Победа! Поле чисто"
+                else -> "Игра окончена"
+            }
+
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (state.status == GameStatus.PLAYING) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+fun MoveHistoryList(moves: List<Move>, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.clip(RoundedCornerShape(8.dp)),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    ) {
+        LazyColumn(
+            modifier = Modifier.padding(8.dp),
+            reverseLayout = true
+        ) {
+            items(moves.reversed()) { move ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${move.moveNumber}. ${move.piece.type} (${move.from.row},${move.from.col}) → (${move.to.row},${move.to.col})",
+                        fontSize = 14.sp
+                    )
+                    if (move.isMineExplosion) {
+                        Text(text = "💥 Взрыв!", color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    } else if (move.capturedPiece != null) {
+                        Text(text = "⚔️ Взятие", color = Color(0xFFE91E63), fontSize = 12.sp)
+                    }
+                }
+                HorizontalDivider(color = Color.Black.copy(alpha = 0.1f))
+            }
         }
     }
 }

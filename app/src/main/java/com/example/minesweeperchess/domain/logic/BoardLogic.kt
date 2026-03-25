@@ -54,7 +54,7 @@ object BoardLogic {
             else -> return null
         }
 
-        return ChessPiece(type, color, pos)
+        return ChessPiece(type, color)
     }
 
     private fun calculateAdjacentMines(board: List<Cell>, size: Int): List<Cell> {

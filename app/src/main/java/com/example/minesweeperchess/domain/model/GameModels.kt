@@ -20,13 +20,13 @@ data class Position(
 )
 
 data class ChessPiece(
-    val type: PieceType,
-    val color: PieceColor,
-    val position: Position
+    val type: PieceType = PieceType.PAWN,
+    val color: PieceColor = PieceColor.WHITE,
+    val hasMoved: Boolean = false
 )
 
 data class Cell(
-    val position: Position,
+    val position: Position = Position(0, 0),
     val piece: ChessPiece? = null,
     val isMined: Boolean = false,
     val isRevealed: Boolean = false,

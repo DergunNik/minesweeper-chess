@@ -5,5 +5,6 @@ data class GameSession(
     val creatorId: String = "",
     val guestId: String? = null,
     val status: String = "LOBBY",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val state: GameState? = null
 )
