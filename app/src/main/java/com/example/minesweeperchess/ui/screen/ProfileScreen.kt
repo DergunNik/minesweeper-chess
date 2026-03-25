@@ -83,7 +83,8 @@ fun ProfileScreen(
                 }
             }
 
-            ImagePicker(onImageSelected = { viewModel.selectCustomImage(it) })
+            // TODO: разобраться с хранилищем
+//            ImagePicker(onImageSelected = { viewModel.selectCustomImage(it) })
 
             OutlinedTextField(
                 value = uiState.nickname,

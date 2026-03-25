@@ -3,6 +3,9 @@ package com.example.minesweeperchess.data.repository
 import com.example.minesweeperchess.domain.model.GameSession
 import com.example.minesweeperchess.domain.repository.GameRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.snapshots
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -69,6 +72,12 @@ class FirebaseGameRepository @Inject constructor(
             gamesCollection.document(gameId).delete().await()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    override fun observeGame(gameId: String): Flow<GameSession?> {
+        return gamesCollection.document(gameId).snapshots().map { snapshot ->
+            snapshot.toObject(GameSession::class.java)
         }
     }
 }

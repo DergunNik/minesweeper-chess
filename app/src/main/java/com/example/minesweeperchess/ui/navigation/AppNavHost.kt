@@ -1,11 +1,18 @@
 package com.example.minesweeperchess.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.minesweeperchess.ui.screen.*
+import com.example.minesweeperchess.viewmodel.WaitingRoomViewModel
 
 @Composable
 fun AppNavHost(
@@ -60,7 +67,7 @@ fun AppNavHost(
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToModeSelection = { navController.navigate(Screen.ModeSelection.route) },
                 onGameCreated = { gameId ->
-                    navController.navigate(Screen.Game.createRoute(gameId))
+                    navController.navigate(Screen.WaitingRoom.createRoute(gameId))
                 }
             )
         }
@@ -81,23 +88,45 @@ fun AppNavHost(
             )
         }
 
-        composable(Screen.WaitingRoom.route) { backStackEntry ->
+        composable(
+            route = Screen.WaitingRoom.route,
+            arguments = listOf(navArgument("gameId") { type = NavType.StringType })
+        ) { backStackEntry ->
             val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
+            val viewModel: WaitingRoomViewModel = hiltViewModel()
+            val isOpponentJoined by viewModel.isOpponentJoined.collectAsState()
+
+            LaunchedEffect(gameId) {
+                viewModel.startObserving(gameId)
+            }
+
             WaitingRoomScreen(
                 gameId = gameId,
+                isOpponentJoined = isOpponentJoined,
                 onBack = {
-                    // TODO: viewModel.leaveGame()
                     navController.popBackStack()
+                },
+                onGameStarted = {
+                    navController.navigate(Screen.Game.createRoute(gameId)) {
+                        popUpTo(Screen.WaitingRoom.route) { inclusive = true }
+                    }
                 }
             )
         }
 
-//        composable(Screen.Game.route) { backStackEntry ->
-//            val gameId = backStackEntry.arguments?.getString("gameId") ?: "ID не найден"
-//            GameScreen(
-//                gameId = gameId,
-//                onQuit = { navController.popBackStack(Screen.Lobby.route, false) }
-//            )
-//        }
+        composable(
+            route = Screen.Game.route,
+            arguments = listOf(navArgument("gameId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
+            GameScreen(
+                gameId = gameId,
+                onQuit = {
+                    navController.navigate(Screen.Lobby.route) {
+                        popUpTo(Screen.Lobby.route) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
