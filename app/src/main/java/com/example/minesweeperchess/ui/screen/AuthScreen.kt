@@ -11,9 +11,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-// ВАЖНО: Импорты должны быть из androidx
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.minesweeperchess.R
@@ -72,7 +73,12 @@ fun AuthScreen(
         )
 
         uiState.error?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -99,7 +105,7 @@ fun AuthScreen(
                             val googleIdOption = GetGoogleIdOption.Builder()
                                 .setFilterByAuthorizedAccounts(false)
                                 .setServerClientId(context.getString(R.string.default_web_client_id))
-                                .setAutoSelectEnabled(true)
+                                .setAutoSelectEnabled(false)
                                 .build()
 
                             val request = GetCredentialRequest.Builder()
@@ -110,8 +116,16 @@ fun AuthScreen(
                             val googleIdCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
 
                             viewModel.onGoogleSignInResult(googleIdCredential.idToken)
+                        } catch (e: NoCredentialException) {
+                            viewModel.setError("Аккаунты Google не найдены на устройстве")
+                        } catch (e: GetCredentialException) {
+                            if (e.type == "android.credentials.GetCredentialException.TYPE_USER_CANCELED") {
+                                // User dismissed the dialog, do nothing
+                            } else {
+                                viewModel.setError("Ошибка авторизации: ${e.message}")
+                            }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            viewModel.setError("Произошла непредвиденная ошибка")
                         }
                     }
                 },

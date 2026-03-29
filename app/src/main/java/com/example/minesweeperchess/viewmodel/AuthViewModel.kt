@@ -26,6 +26,10 @@ class AuthViewModel @Inject constructor(
         _uiState.update { it.copy(isLoginMode = !it.isLoginMode, error = null) }
     }
 
+    fun setError(message: String) {
+        _uiState.update { it.copy(error = message, isLoading = false) }
+    }
+
     fun authenticate() {
         _uiState.update { it.copy(isLoading = true, error = null) }
 
@@ -48,7 +52,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun onGoogleSignInResult(idToken: String) {
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true, error = null) }
         repository.signInWithGoogle(idToken) { result ->
             when (result) {
                 is AuthResult.Success -> _uiState.update { it.copy(isLoading = false, isSuccess = true) }
