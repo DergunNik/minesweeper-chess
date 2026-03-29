@@ -50,7 +50,6 @@ fun ChessBoard(
 ) {
     BoxWithConstraints(modifier = modifier.aspectRatio(1f)) {
         val cellSize = maxWidth / state.boardSize
-
         val shouldFlip = playerColor == PieceColor.BLACK
         val rows = if (shouldFlip) (state.boardSize - 1 downTo 0) else (0 until state.boardSize)
         val cols = if (shouldFlip) (state.boardSize - 1 downTo 0) else (0 until state.boardSize)

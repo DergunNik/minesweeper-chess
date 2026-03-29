@@ -29,7 +29,7 @@ class LobbyViewModel @Inject constructor(
         authRepository.logout()
     }
 
-    fun startPvPGame() {
+    fun startPvPGame(creatorColor: PieceColor) {
         val userId = authRepository.currentUser?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -42,7 +42,7 @@ class LobbyViewModel @Inject constructor(
                 status = GameStatus.PLAYING
             )
 
-            gameRepository.createGame(userId, initialState)
+            gameRepository.createGame(userId, initialState, creatorColor)
                 .onSuccess { id -> _uiState.update { it.copy(isLoading = false, gameId = id) } }
                 .onFailure { e -> _uiState.update { it.copy(isLoading = false, error = e.message) } }
         }

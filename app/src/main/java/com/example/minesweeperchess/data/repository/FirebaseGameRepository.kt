@@ -18,7 +18,11 @@ class FirebaseGameRepository @Inject constructor(
 
     private val gamesCollection = firestore.collection("games")
 
-    override suspend fun createGame(userId: String, initialState: GameState): Result<String> = try {
+    override suspend fun createGame(
+        userId: String,
+        initialState: GameState,
+        creatorColor: PieceColor
+    ): Result<String> = try {
         var finalGameId: String? = null
 
         for (attempt in 1..5) {
@@ -31,7 +35,7 @@ class FirebaseGameRepository @Inject constructor(
                     creatorId = userId,
                     creatorPresent = true,
                     guestPresent = false,
-                    creatorColor = PieceColor.WHITE,
+                    creatorColor = creatorColor,
                     status = "LOBBY",
                     state = initialState
                 )

@@ -91,7 +91,7 @@ fun GameScreen(
 
         PlayerInfoRow(
             isOpponent = false,
-            nickname = ("Вы (" + currentUserProfile?.nickname + ")"),
+            nickname = "Вы (${currentUserProfile?.nickname ?: ""})",
             avatarUrl = currentUserProfile?.avatarUrl,
             playerColor = playerColor
         )
@@ -148,7 +148,7 @@ fun PlayerInfoRow(
             if (!avatarUrl.isNullOrEmpty()) {
                 AsyncImage(
                     model = avatarUrl,
-                    contentDescription = "Аватар",
+                    contentDescription = null,
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(20.dp)),

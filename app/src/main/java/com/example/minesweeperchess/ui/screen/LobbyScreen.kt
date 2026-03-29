@@ -46,7 +46,7 @@ fun LobbyScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text("MINESWEEPER CHESS", style = MaterialTheme.typography.displaySmall)
+        Text("CHESS", style = MaterialTheme.typography.displaySmall)
 
         Spacer(modifier = Modifier.height(48.dp))
 

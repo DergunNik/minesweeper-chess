@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.minesweeperchess.domain.model.PieceColor
 import com.example.minesweeperchess.ui.component.MenuButton
 import com.example.minesweeperchess.viewmodel.LobbyViewModel
 
@@ -26,6 +27,7 @@ fun MatchmakingScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var inputGameId by remember { mutableStateOf("") }
+    var selectedColor by remember { mutableStateOf(PieceColor.WHITE) }
 
     LaunchedEffect(uiState.gameId, uiState.isJoined) {
         if (uiState.isJoined && uiState.gameId != null) {
@@ -56,10 +58,30 @@ fun MatchmakingScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
         ) {
             Text("Создать новую игру", style = MaterialTheme.typography.titleMedium)
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Ваш цвет:", style = MaterialTheme.typography.bodyLarge)
+
+                FilterChip(
+                    selected = selectedColor == PieceColor.WHITE,
+                    onClick = { selectedColor = PieceColor.WHITE },
+                    label = { Text("⚪ Белые") }
+                )
+
+                FilterChip(
+                    selected = selectedColor == PieceColor.BLACK,
+                    onClick = { selectedColor = PieceColor.BLACK },
+                    label = { Text("⚫ Черные") }
+                )
+            }
+
             MenuButton(
                 text = "Создать лобби",
                 icon = Icons.Default.PlayArrow,
-                onClick = { viewModel.startPvPGame() }
+                onClick = { viewModel.startPvPGame(selectedColor) }
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
