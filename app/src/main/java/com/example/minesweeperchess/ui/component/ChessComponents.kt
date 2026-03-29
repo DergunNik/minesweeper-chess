@@ -63,12 +63,16 @@ fun ChessBoard(
                         val isDark = (row + col) % 2 != 0
                         val isSelected = pos == selectedPosition
                         val isValidMove = validMoves.contains(pos)
+                        val isKingUnderCheck = state.isCheck &&
+                                cell.piece?.type == PieceType.KING &&
+                                cell.piece.color == state.currentTurn
 
                         Box(
                             modifier = Modifier
                                 .size(cellSize)
                                 .background(
                                     when {
+                                        isKingUnderCheck -> Color(0xFFFFCDD2)
                                         isSelected -> Color.Yellow.copy(alpha = 0.5f)
                                         isValidMove -> Color.Green.copy(alpha = 0.3f)
                                         isDark -> Color(0xFF769656)

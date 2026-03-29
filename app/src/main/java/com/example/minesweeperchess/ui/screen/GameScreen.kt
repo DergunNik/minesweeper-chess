@@ -190,7 +190,10 @@ fun GameHeader(gameId: String, state: GameState) {
             Text(text = "ID: $gameId", style = MaterialTheme.typography.labelMedium)
 
             val statusText = when (state.status) {
-                GameStatus.PLAYING -> "Ход: ${if (state.currentTurn == PieceColor.WHITE) "Белых" else "Черных"}"
+                GameStatus.PLAYING -> {
+                    val turn = if (state.currentTurn == PieceColor.WHITE) "Белых" else "Черных"
+                    if (state.isCheck) "ШАХ! Ход $turn" else "Ход $turn"
+                }
                 GameStatus.WHITE_WIN_CHECKMATE -> "Мат! Белые победили"
                 GameStatus.BLACK_WIN_CHECKMATE -> "Мат! Черные победили"
                 GameStatus.DRAW_STALEMATE -> "Ничья (Пат)"
@@ -200,7 +203,11 @@ fun GameHeader(gameId: String, state: GameState) {
                 text = statusText,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (state.status == GameStatus.PLAYING) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                color = when {
+                    state.status != GameStatus.PLAYING -> MaterialTheme.colorScheme.error
+                    state.isCheck -> Color(0xFFD32F2F)
+                    else -> MaterialTheme.colorScheme.primary
+                }
             )
         }
     }

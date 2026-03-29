@@ -3,6 +3,7 @@ package com.example.minesweeperchess.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.minesweeperchess.domain.logic.GameActions
+import com.example.minesweeperchess.domain.logic.GameEvaluator
 import com.example.minesweeperchess.domain.logic.MoveValidator
 import com.example.minesweeperchess.domain.model.*
 import com.example.minesweeperchess.domain.repository.GameRepository
@@ -61,7 +62,7 @@ class GameViewModel @Inject constructor(
             repository.observeGame(gameId).collect { session ->
                 _gameSession.value = session
                 session?.state?.let { newState ->
-                    _gameState.value = newState
+                    _gameState.value = GameEvaluator.validateAndUpdate(newState)
                 }
 
                 session?.let { s ->
@@ -100,7 +101,8 @@ class GameViewModel @Inject constructor(
             }
         } else {
             if (_validMoves.value.contains(position)) {
-                val newState = GameActions.makeMove(state, selected, position)
+                var newState = GameActions.makeMove(state, selected, position)
+                newState = GameEvaluator.validateAndUpdate(newState)
                 updateGameState(newState)
             }
             _selectedPosition.value = null

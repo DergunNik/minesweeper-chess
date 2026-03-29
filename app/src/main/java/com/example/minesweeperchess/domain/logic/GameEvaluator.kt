@@ -7,7 +7,6 @@ object GameEvaluator {
     fun evaluate(state: GameState): GameStatus {
         val color = state.currentTurn
         val hasLegalMoves = hasAnyLegalMoves(color, state)
-
         return when {
             !hasLegalMoves && state.isCheck -> if (color == PieceColor.WHITE) GameStatus.BLACK_WIN_CHECKMATE else GameStatus.WHITE_WIN_CHECKMATE
             !hasLegalMoves && !state.isCheck -> GameStatus.DRAW_STALEMATE
@@ -30,5 +29,16 @@ object GameEvaluator {
             }
         }
         return false
+    }
+
+    fun validateAndUpdate(state: GameState): GameState {
+        val isCheck = isKingUnderAttack(state.currentTurn, state.board, state.boardSize)
+        val hasLegalMoves = hasAnyLegalMoves(state.currentTurn, state)
+        val status = when {
+            !hasLegalMoves && isCheck -> if (state.currentTurn == PieceColor.WHITE) GameStatus.BLACK_WIN_CHECKMATE else GameStatus.WHITE_WIN_CHECKMATE
+            !hasLegalMoves && !isCheck -> GameStatus.DRAW_STALEMATE
+            else -> GameStatus.PLAYING
+        }
+        return state.copy(isCheck = isCheck, status = status)
     }
 }
