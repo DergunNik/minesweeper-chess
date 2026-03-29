@@ -1,5 +1,6 @@
 package com.example.minesweeperchess.ui.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,10 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.minesweeperchess.domain.model.*
 import com.example.minesweeperchess.ui.component.ChessBoard
 import com.example.minesweeperchess.viewmodel.GameViewModel
@@ -25,8 +28,13 @@ fun GameScreen(
     viewModel: GameViewModel = hiltViewModel()
 ) {
     val gameState by viewModel.gameState.collectAsState()
+    val gameSession by viewModel.gameSession.collectAsState()
     val selectedPosition by viewModel.selectedPosition.collectAsState()
     val validMoves by viewModel.validMoves.collectAsState()
+    val playerColor = viewModel.getPlayerColor()
+
+    val currentUserProfile by viewModel.currentUserProfile.collectAsState()
+    val opponentProfile by viewModel.opponentProfile.collectAsState()
 
     LaunchedEffect(gameId) {
         viewModel.initGame(gameId)
@@ -38,18 +46,54 @@ fun GameScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val isOpponentAway = gameSession?.let {
+            if (viewModel.currentUserId == it.creatorId) !it.guestPresent else !it.creatorPresent
+        } ?: false
+
+        if (isOpponentAway) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            ) {
+                Text(
+                    text = "Соперник отключился. Ожидаем возвращения...",
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+
+        PlayerInfoRow(
+            isOpponent = true,
+            nickname = opponentProfile?.nickname ?: "Соперник",
+            avatarUrl = opponentProfile?.avatarUrl,
+            playerColor = playerColor
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         GameHeader(gameId = gameId, state = gameState)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         ChessBoard(
             state = gameState,
             selectedPosition = selectedPosition,
             validMoves = validMoves,
             onCellClick = { pos -> viewModel.onCellClick(pos) },
+            playerColor = playerColor,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        PlayerInfoRow(
+            isOpponent = false,
+            nickname = ("Вы (" + currentUserProfile?.nickname + ")"),
+            avatarUrl = currentUserProfile?.avatarUrl,
+            playerColor = playerColor
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -58,13 +102,16 @@ fun GameScreen(
             moves = gameState.moveHistory,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(100.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = onQuit,
+            onClick = {
+                viewModel.leaveGame()
+                onQuit()
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer
@@ -73,6 +120,59 @@ fun GameScreen(
             shape = RoundedCornerShape(8.dp)
         ) {
             Text("Выйти из игры")
+        }
+    }
+}
+
+@Composable
+fun PlayerInfoRow(
+    isOpponent: Boolean,
+    nickname: String,
+    avatarUrl: String?,
+    playerColor: PieceColor?
+) {
+    val colorText = if (isOpponent) {
+        if (playerColor == PieceColor.WHITE) "⚫ Черные" else "⚪ Белые"
+    } else {
+        if (playerColor == PieceColor.WHITE) "⚪ Белые" else "⚫ Черные"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (!avatarUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = "Аватар",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(20.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = nickname.take(1).uppercase(),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(nickname, fontWeight = FontWeight.Bold)
+                Text(colorText, style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 }

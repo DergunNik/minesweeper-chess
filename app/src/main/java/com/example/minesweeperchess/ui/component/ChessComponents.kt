@@ -45,14 +45,20 @@ fun ChessBoard(
     selectedPosition: Position?,
     validMoves: List<Position>,
     onCellClick: (Position) -> Unit,
+    playerColor: PieceColor?,
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(modifier = modifier.aspectRatio(1f)) {
         val cellSize = maxWidth / state.boardSize
+
+        val shouldFlip = playerColor == PieceColor.BLACK
+        val rows = if (shouldFlip) (state.boardSize - 1 downTo 0) else (0 until state.boardSize)
+        val cols = if (shouldFlip) (state.boardSize - 1 downTo 0) else (0 until state.boardSize)
+
         Column {
-            for (row in 0 until state.boardSize) {
+            for (row in rows) {
                 Row {
-                    for (col in 0 until state.boardSize) {
+                    for (col in cols) {
                         val pos = Position(row, col)
                         val cell = state.board.find { it.position == pos } ?: Cell(pos)
                         val isDark = (row + col) % 2 != 0

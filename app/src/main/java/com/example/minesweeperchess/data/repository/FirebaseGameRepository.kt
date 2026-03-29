@@ -2,7 +2,9 @@ package com.example.minesweeperchess.data.repository
 
 import com.example.minesweeperchess.domain.model.GameSession
 import com.example.minesweeperchess.domain.model.GameState
+import com.example.minesweeperchess.domain.model.PieceColor
 import com.example.minesweeperchess.domain.repository.GameRepository
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +29,9 @@ class FirebaseGameRepository @Inject constructor(
                 val newGame = GameSession(
                     gameId = tempId,
                     creatorId = userId,
+                    creatorPresent = true,
+                    guestPresent = false,
+                    creatorColor = PieceColor.WHITE,
                     status = "LOBBY",
                     state = initialState
                 )
@@ -52,16 +57,18 @@ class FirebaseGameRepository @Inject constructor(
             val game = snapshot.toObject(GameSession::class.java)
             if (game == null) {
                 Result.failure(Exception("Ошибка обработки данных"))
-            }
-            else if (game.guestId != null) {
+            } else if (game.creatorId == userId) {
+                gamesCollection.document(gameId).update("creatorPresent", true).await()
+                Result.success(Unit)
+            } else if (game.guestId == userId) {
+                gamesCollection.document(gameId).update("guestPresent", true).await()
+                Result.success(Unit)
+            } else if (game.guestId != null) {
                 Result.failure(Exception("Игра уже заполнена"))
-            }
-            else if (game.creatorId == userId) {
-                Result.failure(Exception("Вы создатель"))
-            }
-            else {
+            } else {
                 gamesCollection.document(gameId).update(
                     "guestId", userId,
+                    "guestPresent", true,
                     "status", "PLAYING"
                 ).await()
                 Result.success(Unit)
@@ -75,7 +82,22 @@ class FirebaseGameRepository @Inject constructor(
 
     override suspend fun leaveGame(gameId: String) {
         try {
-            gamesCollection.document(gameId).delete().await()
+            val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+            val snapshot = gamesCollection.document(gameId).get().await()
+            if (snapshot.exists()) {
+                val game = snapshot.toObject(GameSession::class.java) ?: return
+                if (game.creatorId == userId) {
+                    gamesCollection.document(gameId).update("creatorPresent", false).await()
+                } else if (game.guestId == userId) {
+                    gamesCollection.document(gameId).update("guestPresent", false).await()
+                }
+
+                val updatedSnapshot = gamesCollection.document(gameId).get().await()
+                val updatedGame = updatedSnapshot.toObject(GameSession::class.java)
+                if (updatedGame != null && !updatedGame.creatorPresent && !updatedGame.guestPresent) {
+                    gamesCollection.document(gameId).delete().await()
+                }
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
