@@ -5,12 +5,26 @@ import kotlin.math.abs
 
 object MoveValidator {
 
-    fun getValidMoves(piece: ChessPiece, currentPos: Position, board: List<Cell>, size: Int): List<Position> {
+    fun getLegalMoves(piece: ChessPiece, currentPos: Position, state: GameState): List<Position> {
+        val pseudoLegalMoves = getPseudoLegalMoves(piece, currentPos, state.board, state.boardSize)
+        val validMoves = pseudoLegalMoves.filter { to ->
+            val nextBoard = simulateMove(state.board, currentPos, to)
+            !GameEvaluator.isKingUnderAttack(piece.color, nextBoard, state.boardSize)
+        }.toMutableList()
+
+        if (piece.type == PieceType.KING && !piece.hasMoved && !state.isCheck) {
+            validMoves.addAll(getCastlingMoves(piece, currentPos, state))
+        }
+
+        return validMoves
+    }
+
+    fun getPseudoLegalMoves(piece: ChessPiece, currentPos: Position, board: List<Cell>, size: Int): List<Position> {
         val moves = mutableListOf<Position>()
         for (r in 0 until size) {
             for (c in 0 until size) {
                 val target = Position(r, c)
-                if (isValidChessMove(piece, currentPos, target, board)) {
+                if (isPseudoLegal(piece, currentPos, target, board)) {
                     moves.add(target)
                 }
             }
@@ -18,33 +32,34 @@ object MoveValidator {
         return moves
     }
 
-    private fun isValidChessMove(piece: ChessPiece, currentPos: Position, target: Position, board: List<Cell>): Boolean {
-        if (currentPos == target) return false
+    private fun isPseudoLegal(piece: ChessPiece, start: Position, target: Position, board: List<Cell>): Boolean {
+        if (start == target) return false
 
         val targetCell = board.find { it.position == target }
         if (targetCell?.piece?.color == piece.color) return false
 
-        val dr = abs(target.row - currentPos.row)
-        val dc = abs(target.col - currentPos.col)
+        val dr = target.row - start.row
+        val dc = target.col - start.col
+        val absDr = abs(dr)
+        val absDc = abs(dc)
 
         return when (piece.type) {
             PieceType.PAWN -> {
-                val direction = if (piece.color == PieceColor.WHITE) 1 else -1
-                val startRow = if (piece.color == PieceColor.WHITE) 1 else 6
+                val direction = if (piece.color == PieceColor.WHITE) -1 else 1
+                val startRow = if (piece.color == PieceColor.WHITE) 6 else 1
 
                 if (dc == 0 && targetCell?.piece == null) {
-                    (target.row - currentPos.row) == direction ||
-                            (currentPos.row == startRow && (target.row - currentPos.row) == 2 * direction &&
-                                    isPathClear(currentPos, target, board))
-                } else if (dc == 1 && (target.row - currentPos.row) == direction) {
+                    dr == direction || (start.row == startRow && dr == 2 * direction &&
+                            board.find { it.position == Position(start.row + direction, start.col) }?.piece == null)
+                } else if (absDc == 1 && dr == direction) {
                     targetCell?.piece != null
                 } else false
             }
-            PieceType.KNIGHT -> (dr == 2 && dc == 1) || (dr == 1 && dc == 2)
-            PieceType.BISHOP -> dr == dc && isPathClear(currentPos, target, board)
-            PieceType.ROOK -> (dr == 0 || dc == 0) && isPathClear(currentPos, target, board)
-            PieceType.QUEEN -> (dr == dc || dr == 0 || dc == 0) && isPathClear(currentPos, target, board)
-            PieceType.KING -> dr <= 1 && dc <= 1
+            PieceType.KNIGHT -> (absDr == 2 && absDc == 1) || (absDr == 1 && absDc == 2)
+            PieceType.BISHOP -> absDr == absDc && isPathClear(start, target, board)
+            PieceType.ROOK -> (absDr == 0 || absDc == 0) && isPathClear(start, target, board)
+            PieceType.QUEEN -> (absDr == absDc || absDr == 0 || absDc == 0) && isPathClear(start, target, board)
+            PieceType.KING -> absDr <= 1 && absDc <= 1
         }
     }
 
@@ -62,15 +77,43 @@ object MoveValidator {
         return true
     }
 
-    fun getLegalMoves(piece: ChessPiece, currentPos: Position, state: GameState): List<Position> {
-        val pseudoLegalMoves = getValidMoves(piece, currentPos, state.board, state.boardSize)
-        return pseudoLegalMoves.filter { to ->
-            val nextBoard = simulateMove(state.board, currentPos, to)
-            !GameEvaluator.isKingUnderAttack(piece.color, nextBoard, state.boardSize)
+    private fun getCastlingMoves(king: ChessPiece, kingPos: Position, state: GameState): List<Position> {
+        val moves = mutableListOf<Position>()
+        val row = kingPos.row
+
+        val kingsideRookPos = Position(row, 7)
+        val kingsideRook = state.board.find { it.position == kingsideRookPos }?.piece
+        if (kingsideRook?.type == PieceType.ROOK && !kingsideRook.hasMoved) {
+            if (isPathClear(kingPos, kingsideRookPos, state.board)) {
+                if (!isSquareAttacked(Position(row, 5), king.color, state.board, state.boardSize) &&
+                    !isSquareAttacked(Position(row, 6), king.color, state.board, state.boardSize)) {
+                    moves.add(Position(row, 6))
+                }
+            }
+        }
+
+        val queensideRookPos = Position(row, 0)
+        val queensideRook = state.board.find { it.position == queensideRookPos }?.piece
+        if (queensideRook?.type == PieceType.ROOK && !queensideRook.hasMoved) {
+            if (isPathClear(kingPos, queensideRookPos, state.board)) {
+                if (!isSquareAttacked(Position(row, 3), king.color, state.board, state.boardSize) &&
+                    !isSquareAttacked(Position(row, 2), king.color, state.board, state.boardSize)) {
+                    moves.add(Position(row, 2))
+                }
+            }
+        }
+
+        return moves
+    }
+
+    fun isSquareAttacked(pos: Position, defendingColor: PieceColor, board: List<Cell>, size: Int): Boolean {
+        val opponentColor = if (defendingColor == PieceColor.WHITE) PieceColor.BLACK else PieceColor.WHITE
+        return board.filter { it.piece?.color == opponentColor }.any { cell ->
+            isPseudoLegal(cell.piece!!, cell.position, pos, board)
         }
     }
 
-    private fun simulateMove(board: List<Cell>, from: Position, to: Position): List<Cell> {
+    fun simulateMove(board: List<Cell>, from: Position, to: Position): List<Cell> {
         val movingPiece = board.find { it.position == from }?.piece ?: return board
         return board.map { cell ->
             when (cell.position) {

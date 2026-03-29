@@ -61,7 +61,7 @@ fun AppNavHost(
         }
 
         composable(Screen.ModeSelection.route) {
-            ModeSelectionScreen(
+            MatchmakingScreen(
                 onBack = { navController.popBackStack() },
                 onGameCreated = { gameId ->
                     navController.navigate(Screen.WaitingRoom.createRoute(gameId)) {

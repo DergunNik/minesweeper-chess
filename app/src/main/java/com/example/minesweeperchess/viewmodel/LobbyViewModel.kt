@@ -3,7 +3,6 @@ package com.example.minesweeperchess.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.minesweeperchess.domain.logic.BoardLogic
-import com.example.minesweeperchess.domain.model.GameMode
 import com.example.minesweeperchess.domain.model.GameState
 import com.example.minesweeperchess.domain.model.GameStatus
 import com.example.minesweeperchess.domain.model.PieceColor
@@ -30,17 +29,19 @@ class LobbyViewModel @Inject constructor(
         authRepository.logout()
     }
 
-    fun startPvPGame(selectedMode: GameMode) {
+    fun startPvPGame() {
         val userId = authRepository.currentUser?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val initialBoard = BoardLogic.createInitialBoard(selectedMode)
+
+            val initialBoard = BoardLogic.createInitialBoard()
+
             val initialState = GameState(
-                mode = selectedMode,
                 board = initialBoard,
                 currentTurn = PieceColor.WHITE,
                 status = GameStatus.PLAYING
             )
+
             gameRepository.createGame(userId, initialState)
                 .onSuccess { id -> _uiState.update { it.copy(isLoading = false, gameId = id) } }
                 .onFailure { e -> _uiState.update { it.copy(isLoading = false, error = e.message) } }

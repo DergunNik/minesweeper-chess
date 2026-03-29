@@ -1,100 +1,67 @@
 package com.example.minesweeperchess.domain.logic
 
 import com.example.minesweeperchess.domain.model.*
+import kotlin.math.abs
 
 object GameActions {
-
-    fun processCellClick(state: GameState, clickedPos: Position): GameState {
-        val newState = when (state.mode) {
-            GameMode.MINESWEEPER -> revealCell(state, clickedPos)
-            else -> state
-        }
-
-        return newState.copy(status = GameEvaluator.evaluate(newState))
-    }
-
-    private fun revealCell(state: GameState, pos: Position): GameState {
-        val cell = state.board.find { it.position == pos } ?: return state
-        if (cell.isRevealed || cell.isFlagged || state.status != GameStatus.PLAYING) return state
-
-        if (cell.isMined) {
-            return state.copy(
-                board = state.board.map { it.copy(isRevealed = true) },
-                status = GameStatus.MINESWEEPER_LOSS
-            )
-        }
-
-        val newBoard = state.board.toMutableList()
-        floodFill(newBoard, pos, state.boardSize)
-
-        return state.copy(board = newBoard)
-    }
-
-    private fun floodFill(board: MutableList<Cell>, pos: Position, size: Int) {
-        val index = board.indexOfFirst { it.position == pos }
-        if (index == -1 || board[index].isRevealed) return
-
-        board[index] = board[index].copy(isRevealed = true)
-
-        if (board[index].adjacentMines == 0) {
-            BoardLogic.getNeighbors(pos, size).forEach { neighbor ->
-                floodFill(board, neighbor, size)
-            }
-        }
-    }
 
     fun makeMove(state: GameState, from: Position, to: Position): GameState {
         if (state.status != GameStatus.PLAYING) return state
 
         val fromCell = state.board.find { it.position == from } ?: return state
         val movingPiece = fromCell.piece ?: return state
-        val targetCell = state.board.find { it.position == to } ?: return state
+        if (movingPiece.color != state.currentTurn) return state
 
-        val isExplosion = state.mode == GameMode.CHESS_MINESWEEPER && targetCell.isMined
+        val targetCell = state.board.find { it.position == to } ?: return state
         val captured = targetCell.piece
+
+        val isCastling = movingPiece.type == PieceType.KING && abs(from.col - to.col) == 2
+
+        var newBoard = state.board.map { cell ->
+            when (cell.position) {
+                from -> cell.copy(piece = null)
+                to -> cell.copy(piece = movingPiece.copy(hasMoved = true))
+                else -> cell
+            }
+        }
+
+        if (isCastling) {
+            val rookFromCol = if (to.col == 6) 7 else 0
+            val rookToCol = if (to.col == 6) 5 else 3
+            val rookFromPos = Position(from.row, rookFromCol)
+            val rookToPos = Position(from.row, rookToCol)
+
+            val rook = newBoard.find { it.position == rookFromPos }?.piece
+
+            newBoard = newBoard.map { cell ->
+                when (cell.position) {
+                    rookFromPos -> cell.copy(piece = null)
+                    rookToPos -> cell.copy(piece = rook?.copy(hasMoved = true))
+                    else -> cell
+                }
+            }
+        }
 
         val newMove = Move(
             from = from,
             to = to,
             piece = movingPiece,
             capturedPiece = captured,
-            isMineExplosion = isExplosion,
+            isCastling = isCastling,
             moveNumber = state.moveHistory.size + 1
         )
 
-        val newBoard = state.board.map { cell ->
-            when (cell.position) {
-                from -> cell.copy(piece = null)
-                to -> {
-                    if (isExplosion) {
-                        cell.copy(piece = null, isRevealed = true)
-                    } else {
-                        cell.copy(piece = movingPiece, isRevealed = true)
-                    }
-                }
-                else -> cell
-            }
-        }
-
         val nextTurn = if (state.currentTurn == PieceColor.WHITE) PieceColor.BLACK else PieceColor.WHITE
+
+        val isNextPlayerInCheck = GameEvaluator.isKingUnderAttack(nextTurn, newBoard, state.boardSize)
 
         val intermediateState = state.copy(
             board = newBoard,
             currentTurn = nextTurn,
-            moveHistory = state.moveHistory + newMove
+            moveHistory = state.moveHistory + newMove,
+            isCheck = isNextPlayerInCheck
         )
 
         return intermediateState.copy(status = GameEvaluator.evaluate(intermediateState))
-    }
-
-    fun toggleFlag(state: GameState, pos: Position): GameState {
-        if (state.mode != GameMode.MINESWEEPER || state.status != GameStatus.PLAYING) return state
-
-        val newBoard = state.board.map { cell ->
-            if (cell.position == pos && !cell.isRevealed) {
-                cell.copy(isFlagged = !cell.isFlagged)
-            } else cell
-        }
-        return state.copy(board = newBoard)
     }
 }

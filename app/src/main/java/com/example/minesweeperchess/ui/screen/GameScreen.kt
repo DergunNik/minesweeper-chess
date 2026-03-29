@@ -1,6 +1,5 @@
 package com.example.minesweeperchess.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,7 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.minesweeperchess.domain.model.*
-import com.example.minesweeperchess.ui.component.BoardComponent
+import com.example.minesweeperchess.ui.component.ChessBoard
+import com.example.minesweeperchess.viewmodel.GameViewModel
 
 @Composable
 fun GameScreen(
@@ -42,12 +42,11 @@ fun GameScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        BoardComponent(
+        ChessBoard(
             state = gameState,
             selectedPosition = selectedPosition,
             validMoves = validMoves,
             onCellClick = { pos -> viewModel.onCellClick(pos) },
-            onCellLongClick = { pos -> viewModel.onCellLongClick(pos) },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -94,9 +93,7 @@ fun GameHeader(gameId: String, state: GameState) {
                 GameStatus.PLAYING -> "Ход: ${if (state.currentTurn == PieceColor.WHITE) "Белых" else "Черных"}"
                 GameStatus.WHITE_WIN_CHECKMATE -> "Мат! Белые победили"
                 GameStatus.BLACK_WIN_CHECKMATE -> "Мат! Черные победили"
-                GameStatus.MINESWEEPER_LOSS -> "БУМ! Вы подорвались"
-                GameStatus.MINESWEEPER_WIN -> "Победа! Поле чисто"
-                else -> "Игра окончена"
+                GameStatus.DRAW_STALEMATE -> "Ничья (Пат)"
             }
 
             Text(
@@ -126,13 +123,12 @@ fun MoveHistoryList(moves: List<Move>, modifier: Modifier = Modifier) {
                         .padding(vertical = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    val castlingText = if (move.isCastling) " (Рокировка)" else ""
                     Text(
-                        text = "${move.moveNumber}. ${move.piece.type} (${move.from.row},${move.from.col}) → (${move.to.row},${move.to.col})",
+                        text = "${move.moveNumber}. ${move.piece.type} (${move.from.row},${move.from.col}) → (${move.to.row},${move.to.col})$castlingText",
                         fontSize = 14.sp
                     )
-                    if (move.isMineExplosion) {
-                        Text(text = "💥 Взрыв!", color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    } else if (move.capturedPiece != null) {
+                    if (move.capturedPiece != null) {
                         Text(text = "⚔️ Взятие", color = Color(0xFFE91E63), fontSize = 12.sp)
                     }
                 }

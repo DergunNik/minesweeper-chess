@@ -1,4 +1,4 @@
-package com.example.minesweeperchess.ui.screen
+package com.example.minesweeperchess.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,30 +53,18 @@ class GameViewModel @Inject constructor(
         val cell = state.board.find { it.position == position }
         val selected = _selectedPosition.value
 
-        when (state.mode) {
-            GameMode.MINESWEEPER -> {
-                updateGameState(GameActions.processCellClick(state, position))
+        if (selected == null) {
+            if (cell?.piece != null && cell.piece.color == state.currentTurn) {
+                _selectedPosition.value = position
+                _validMoves.value = MoveValidator.getLegalMoves(cell.piece, position, state)
             }
-            else -> {
-                if (selected == null) {
-                    if (cell?.piece != null && cell.piece.color == state.currentTurn) {
-                        _selectedPosition.value = position
-                        _validMoves.value = MoveValidator.getLegalMoves(cell.piece, position, state)                    }
-                } else {
-                    if (_validMoves.value.contains(position)) {
-                        val newState = GameActions.makeMove(state, selected, position)
-                        updateGameState(newState)
-                    }
-                    _selectedPosition.value = null
-                    _validMoves.value = emptyList()
-                }
+        } else {
+            if (_validMoves.value.contains(position)) {
+                val newState = GameActions.makeMove(state, selected, position)
+                updateGameState(newState)
             }
-        }
-    }
-
-    fun onCellLongClick(position: Position) {
-        if (_gameState.value.mode == GameMode.MINESWEEPER) {
-            updateGameState(GameActions.toggleFlag(_gameState.value, position))
+            _selectedPosition.value = null
+            _validMoves.value = emptyList()
         }
     }
 

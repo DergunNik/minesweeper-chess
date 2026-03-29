@@ -4,16 +4,43 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.minesweeperchess.domain.model.*
 
 @Composable
-fun HybridBoard(
+fun PieceLabel(piece: ChessPiece?) {
+    if (piece == null) return
+    val color = if (piece.color == PieceColor.WHITE) Color.White else Color.Black
+    val shadowColor = if (piece.color == PieceColor.WHITE) Color.Black else Color.White
+
+    val symbol = when (piece.type) {
+        PieceType.PAWN -> "♙"
+        PieceType.KNIGHT -> "♘"
+        PieceType.BISHOP -> "♗"
+        PieceType.ROOK -> "♖"
+        PieceType.QUEEN -> "♕"
+        PieceType.KING -> "♔"
+    }
+
+    Text(
+        text = symbol,
+        fontSize = 32.sp,
+        color = color,
+        style = LocalTextStyle.current.copy(
+            shadow = androidx.compose.ui.graphics.Shadow(shadowColor, blurRadius = 2f)
+        )
+    )
+}
+
+@Composable
+fun ChessBoard(
     state: GameState,
     selectedPosition: Position?,
     validMoves: List<Position>,
@@ -37,29 +64,17 @@ fun HybridBoard(
                                 .size(cellSize)
                                 .background(
                                     when {
-                                        cell.isRevealed && cell.isMined -> Color.Red.copy(alpha = 0.7f)
                                         isSelected -> Color.Yellow.copy(alpha = 0.5f)
+                                        isValidMove -> Color.Green.copy(alpha = 0.3f)
                                         isDark -> Color(0xFF769656)
                                         else -> Color(0xFFEEEED2)
                                     }
                                 )
-                                .border(if (isValidMove) 2.dp else 0.5.dp, if (isValidMove) Color.Cyan else Color.Black.copy(0.1f))
+                                .border(if (isValidMove) 2.dp else 0.dp, Color.Green)
                                 .clickable { onCellClick(pos) },
                             contentAlignment = Alignment.Center
                         ) {
-                            if (cell.isRevealed && !cell.isMined) {
-                                MineNumber(cell.adjacentMines)
-                            }
-
                             PieceLabel(cell.piece)
-
-                            if (isValidMove) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(cellSize / 3)
-                                        .background(Color.Black.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape)
-                                )
-                            }
                         }
                     }
                 }

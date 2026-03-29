@@ -1,11 +1,5 @@
 package com.example.minesweeperchess.domain.model
 
-enum class GameMode {
-    MINESWEEPER,
-    CHESS,
-    CHESS_MINESWEEPER
-}
-
 enum class PieceType {
     PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
 }
@@ -27,18 +21,24 @@ data class ChessPiece(
 
 data class Cell(
     val position: Position = Position(0, 0),
-    val piece: ChessPiece? = null,
-    val isMined: Boolean = false,
-    val isRevealed: Boolean = false,
-    val adjacentMines: Int = 0,
-    val isFlagged: Boolean = false
+    val piece: ChessPiece? = null
+)
+
+data class Move(
+    val from: Position = Position(),
+    val to: Position = Position(),
+    val piece: ChessPiece = ChessPiece(),
+    val capturedPiece: ChessPiece? = null,
+    val isCastling: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis(),
+    val moveNumber: Int = 0
 )
 
 data class GameState(
-    val mode: GameMode = GameMode.CHESS_MINESWEEPER,
     val board: List<Cell> = emptyList(),
     val currentTurn: PieceColor = PieceColor.WHITE,
     val status: GameStatus = GameStatus.PLAYING,
+    val isCheck: Boolean = false,
     val boardSize: Int = 8,
     val moveHistory: List<Move> = emptyList()
 )
@@ -47,9 +47,5 @@ enum class GameStatus {
     PLAYING,
     WHITE_WIN_CHECKMATE,
     BLACK_WIN_CHECKMATE,
-    WHITE_WIN_KING_CAPTURED,
-    BLACK_WIN_KING_CAPTURED,
-    DRAW_STALEMATE,
-    MINESWEEPER_WIN,
-    MINESWEEPER_LOSS
+    DRAW_STALEMATE
 }
