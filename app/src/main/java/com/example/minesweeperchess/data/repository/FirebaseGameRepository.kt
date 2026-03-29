@@ -37,6 +37,7 @@ class FirebaseGameRepository @Inject constructor(
                     guestPresent = false,
                     creatorColor = creatorColor,
                     status = "LOBBY",
+//                    createdAt = System.currentTimeMillis(), // todo: check
                     state = initialState
                 )
                 gamesCollection.document(tempId).set(newGame).await()
@@ -90,6 +91,8 @@ class FirebaseGameRepository @Inject constructor(
             val snapshot = gamesCollection.document(gameId).get().await()
             if (snapshot.exists()) {
                 val game = snapshot.toObject(GameSession::class.java) ?: return
+
+                // Обновляем статус присутствия
                 if (game.creatorId == userId) {
                     gamesCollection.document(gameId).update("creatorPresent", false).await()
                 } else if (game.guestId == userId) {
@@ -98,8 +101,14 @@ class FirebaseGameRepository @Inject constructor(
 
                 val updatedSnapshot = gamesCollection.document(gameId).get().await()
                 val updatedGame = updatedSnapshot.toObject(GameSession::class.java)
+
+                // Удаляем игру ТОЛЬКО если оба вышли И игра так и не началась
+                // (никто не присоединился или нет ходов)
                 if (updatedGame != null && !updatedGame.creatorPresent && !updatedGame.guestPresent) {
-                    gamesCollection.document(gameId).delete().await()
+                    val isGameEmpty = updatedGame.guestId == null || updatedGame.state?.moveHistory?.isEmpty() == true
+                    if (isGameEmpty) {
+                        gamesCollection.document(gameId).delete().await()
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -111,5 +120,20 @@ class FirebaseGameRepository @Inject constructor(
         return gamesCollection.document(gameId).snapshots().map { snapshot ->
             snapshot.toObject(GameSession::class.java)
         }
+    }
+
+    override suspend fun getUserGameHistory(userId: String): Result<List<GameSession>> = try {
+        val creatorGames = gamesCollection.whereEqualTo("creatorId", userId).get().await()
+        val guestGames = gamesCollection.whereEqualTo("guestId", userId).get().await()
+
+        val allGames = (creatorGames.documents + guestGames.documents)
+            .distinctBy { it.id }
+            .mapNotNull { it.toObject(GameSession::class.java) }
+            .filter { it.guestId != null }
+            .sortedByDescending { it.createdAt }
+
+        Result.success(allGames)
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 }

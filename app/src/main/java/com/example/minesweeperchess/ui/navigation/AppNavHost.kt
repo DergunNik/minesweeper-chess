@@ -39,11 +39,12 @@ fun AppNavHost(
         composable(Screen.Lobby.route) {
             LobbyScreen(
                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+//                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToModeSelection = { navController.navigate(Screen.ModeSelection.route) },
                 onNavigateToAuth = {
                     navController.navigate(Screen.Auth.route) { popUpTo(Screen.Lobby.route) { inclusive = true } }
                 },
+                onNavigateToStatistics = { navController.navigate(Screen.Statistics.route) },
                 onGameCreated = { gameId -> navController.navigate(Screen.WaitingRoom.createRoute(gameId)) }
             )
         }
@@ -56,9 +57,9 @@ fun AppNavHost(
             )
         }
 
-        composable(Screen.Settings.route) {
-            SettingsScreen(onBack = { navController.popBackStack() })
-        }
+//        composable(Screen.Settings.route) {
+//            SettingsScreen(onBack = { navController.popBackStack() })
+//        }
 
         composable(Screen.ModeSelection.route) {
             MatchmakingScreen(
@@ -107,6 +108,10 @@ fun AppNavHost(
                     navController.navigate(Screen.Lobby.route) { popUpTo(Screen.Lobby.route) { inclusive = true } }
                 }
             )
+        }
+
+        composable(Screen.Statistics.route) {
+            StatisticsScreen(onBack = { navController.popBackStack() })
         }
     }
 }
