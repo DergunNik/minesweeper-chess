@@ -119,9 +119,7 @@ fun AuthScreen(
                         } catch (e: NoCredentialException) {
                             viewModel.setError("Аккаунты Google не найдены на устройстве")
                         } catch (e: GetCredentialException) {
-                            if (e.type == "android.credentials.GetCredentialException.TYPE_USER_CANCELED") {
-                                // User dismissed the dialog, do nothing
-                            } else {
+                            if (e.type != "android.credentials.GetCredentialException.TYPE_USER_CANCELED") {
                                 viewModel.setError("Ошибка авторизации: ${e.message}")
                             }
                         } catch (e: Exception) {

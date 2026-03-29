@@ -1,19 +1,24 @@
 package com.example.minesweeperchess.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.minesweeperchess.domain.model.User
 import com.example.minesweeperchess.domain.repository.AuthRepository
 import com.example.minesweeperchess.domain.repository.AuthResult
+import com.example.minesweeperchess.domain.repository.ProfileRepository
 import com.example.minesweeperchess.ui.state.AuthUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -55,7 +60,26 @@ class AuthViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, error = null) }
         repository.signInWithGoogle(idToken) { result ->
             when (result) {
-                is AuthResult.Success -> _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                is AuthResult.Success -> {
+                    viewModelScope.launch {
+                        val user = repository.currentUser
+                        if (user != null) {
+                            val profile = profileRepository.getProfile(user.id, true)
+                            if (profile == null || profile.nickname.isBlank()) {
+                                val nickname = user.email.substringBefore("@")
+                                profileRepository.saveProfile(
+                                    User(
+                                        id = user.id,
+                                        nickname = nickname,
+                                        avatarUrl = "https://api.dicebear.com/7.x/bottts/svg?seed=Aneka",
+                                        email = user.email
+                                    )
+                                )
+                            }
+                        }
+                        _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                    }
+                }
                 is AuthResult.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
             }
         }
