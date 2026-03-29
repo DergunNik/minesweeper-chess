@@ -10,6 +10,7 @@ sealed class AuthResult {
 interface AuthRepository {
     val currentUser: User?
     fun signIn(email: String, pass: String, onResult: (AuthResult) -> Unit)
+    fun signInWithGoogle(idToken: String, onResult: (AuthResult) -> Unit)
     fun signUp(email: String, pass: String, onResult: (AuthResult) -> Unit)
     fun logout()
 }

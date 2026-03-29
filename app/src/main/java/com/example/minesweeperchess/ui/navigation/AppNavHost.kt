@@ -26,39 +26,14 @@ fun AppNavHost(
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(onNavigate = { route ->
-                navController.navigate(route) {
-                    popUpTo(Screen.Splash.route) { inclusive = true }
-                }
+                navController.navigate(route) { popUpTo(Screen.Splash.route) { inclusive = true } }
             })
         }
 
         composable(Screen.Auth.route) {
             AuthScreen(onNavigateToMain = {
-                navController.navigate(Screen.Profile.route) {
-                    popUpTo(Screen.Auth.route) { inclusive = true }
-                }
+                navController.navigate(Screen.Lobby.route) { popUpTo(Screen.Auth.route) { inclusive = true } }
             })
-        }
-
-        composable(Screen.Profile.route) {
-            val isFromLobby = navController.previousBackStackEntry?.destination?.route == Screen.Lobby.route
-            ProfileScreen(
-                canGoBack = isFromLobby,
-                onBack = { navController.popBackStack() },
-                onProfileSaved = {
-                    if (isFromLobby) {
-                        navController.popBackStack()
-                    } else {
-                        navController.navigate(Screen.Lobby.route) {
-                            popUpTo(Screen.Profile.route) { inclusive = true }
-                        }
-                    }
-                }
-            )
-        }
-
-        composable(Screen.Settings.route) {
-            SettingsScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Screen.Lobby.route) {
@@ -66,10 +41,23 @@ fun AppNavHost(
                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToModeSelection = { navController.navigate(Screen.ModeSelection.route) },
-                onGameCreated = { gameId ->
-                    navController.navigate(Screen.WaitingRoom.createRoute(gameId))
-                }
+                onNavigateToAuth = {
+                    navController.navigate(Screen.Auth.route) { popUpTo(Screen.Lobby.route) { inclusive = true } }
+                },
+                onGameCreated = { gameId -> navController.navigate(Screen.WaitingRoom.createRoute(gameId)) }
             )
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                canGoBack = true,
+                onBack = { navController.popBackStack() },
+                onProfileSaved = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Screen.ModeSelection.route) {
@@ -95,17 +83,11 @@ fun AppNavHost(
             val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
             val viewModel: WaitingRoomViewModel = hiltViewModel()
             val isOpponentJoined by viewModel.isOpponentJoined.collectAsState()
-
-            LaunchedEffect(gameId) {
-                viewModel.startObserving(gameId)
-            }
-
+            LaunchedEffect(gameId) { viewModel.startObserving(gameId) }
             WaitingRoomScreen(
                 gameId = gameId,
                 isOpponentJoined = isOpponentJoined,
-                onBack = {
-                    navController.popBackStack()
-                },
+                onBack = { navController.popBackStack() },
                 onGameStarted = {
                     navController.navigate(Screen.Game.createRoute(gameId)) {
                         popUpTo(Screen.WaitingRoom.route) { inclusive = true }
@@ -122,9 +104,7 @@ fun AppNavHost(
             GameScreen(
                 gameId = gameId,
                 onQuit = {
-                    navController.navigate(Screen.Lobby.route) {
-                        popUpTo(Screen.Lobby.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.Lobby.route) { popUpTo(Screen.Lobby.route) { inclusive = true } }
                 }
             )
         }

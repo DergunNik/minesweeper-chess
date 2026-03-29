@@ -2,6 +2,7 @@ package com.example.minesweeperchess.ui.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -21,6 +22,7 @@ fun LobbyScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToModeSelection: () -> Unit,
+    onNavigateToAuth: () -> Unit,
     onGameCreated: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -31,31 +33,30 @@ fun LobbyScreen(
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
+            IconButton(onClick = {
+                viewModel.logout()
+                onNavigateToAuth()
+            }) {
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Выйти", tint = MaterialTheme.colorScheme.error)
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
         Text("MINESWEEPER CHESS", style = MaterialTheme.typography.displaySmall)
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        MenuButton("Играть", Icons.Default.PlayArrow) {
-            onNavigateToModeSelection()
-        }
+        MenuButton("Играть", Icons.Default.PlayArrow) { onNavigateToModeSelection() }
+        MenuButton("Профиль", Icons.Default.Person) { onNavigateToProfile() }
+//        MenuButton("Настройки", Icons.Default.Settings) { onNavigateToSettings() }
 
-        MenuButton("Профиль", Icons.Default.Person) {
-            onNavigateToProfile()
-        }
+        if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
+        uiState.error?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }
 
-        MenuButton("Настройки", Icons.Default.Settings) {
-            onNavigateToSettings()
-        }
-
-        if (uiState.isLoading) {
-            CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
-        }
-
-        uiState.error?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.error)
-        }
+        Spacer(modifier = Modifier.weight(1.2f))
     }
 }

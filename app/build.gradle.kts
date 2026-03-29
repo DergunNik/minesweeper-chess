@@ -48,6 +48,11 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
 
+    implementation("com.google.android.gms:play-services-auth:21.1.1")
+    implementation("androidx.credentials:credentials:1.2.2")
+    implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
+
     implementation("com.google.dagger:hilt-android:2.59.2")
     ksp("com.google.dagger:hilt-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")

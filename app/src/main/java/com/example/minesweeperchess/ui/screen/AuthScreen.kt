@@ -1,32 +1,26 @@
 package com.example.minesweeperchess.ui.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+// ВАЖНО: Импорты должны быть из androidx
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.minesweeperchess.R
 import com.example.minesweeperchess.viewmodel.AuthViewModel
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 @Composable
 fun AuthScreen(
@@ -36,17 +30,15 @@ fun AuthScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val email by viewModel.email.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) {
-            onNavigateToMain()
-        }
+        if (uiState.isSuccess) onNavigateToMain()
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -79,12 +71,8 @@ fun AuthScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
 
-        if (uiState.error != null) {
-            Text(
-                text = uiState.error!!,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+        uiState.error?.let {
+            Text(text = it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -99,13 +87,43 @@ fun AuthScreen(
             ) {
                 Text(if (uiState.isLoginMode) "Войти" else "Зарегистрироваться")
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        try {
+                            val credentialManager = CredentialManager.create(context)
+
+                            val googleIdOption = GetGoogleIdOption.Builder()
+                                .setFilterByAuthorizedAccounts(false)
+                                .setServerClientId(context.getString(R.string.default_web_client_id))
+                                .setAutoSelectEnabled(true)
+                                .build()
+
+                            val request = GetCredentialRequest.Builder()
+                                .addCredentialOption(googleIdOption)
+                                .build()
+
+                            val result = credentialManager.getCredential(context, request)
+                            val googleIdCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
+
+                            viewModel.onGoogleSignInResult(googleIdCredential.idToken)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Войти через Google")
+            }
         }
 
         TextButton(onClick = { viewModel.toggleMode() }) {
-            Text(
-                if (uiState.isLoginMode) "Нет аккаунта? Зарегистрируйтесь"
-                else "Уже есть аккаунт? Войдите"
-            )
+            Text(if (uiState.isLoginMode) "Нет аккаунта? Зарегистрируйтесь" else "Уже есть аккаунт? Войдите")
         }
     }
 }

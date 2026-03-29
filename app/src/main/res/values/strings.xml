@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Minesweeper Chess</string>
+    <string name="default_web_client_id">31238606096-9i7jnuo9dftui18d872q2mm78h2k5k6h.apps.googleusercontent.com</string>
 </resources>

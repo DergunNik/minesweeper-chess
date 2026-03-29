@@ -46,4 +46,14 @@ class AuthViewModel @Inject constructor(
             repository.signUp(email.value, password.value, callback)
         }
     }
+
+    fun onGoogleSignInResult(idToken: String) {
+        _uiState.update { it.copy(isLoading = true) }
+        repository.signInWithGoogle(idToken) { result ->
+            when (result) {
+                is AuthResult.Success -> _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                is AuthResult.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
+            }
+        }
+    }
 }

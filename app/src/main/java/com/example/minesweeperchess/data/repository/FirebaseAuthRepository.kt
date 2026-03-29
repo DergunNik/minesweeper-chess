@@ -23,6 +23,13 @@ class FirebaseAuthRepository @Inject constructor(
             }
     }
 
+    override fun signInWithGoogle(idToken: String, onResult: (AuthResult) -> Unit) {
+        val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential)
+            .addOnSuccessListener { onResult(AuthResult.Success) }
+            .addOnFailureListener { e -> onResult(AuthResult.Error(e.localizedMessage ?: "Ошибка Google")) }
+    }
+
     override fun signUp(email: String, pass: String, onResult: (AuthResult) -> Unit) {
         auth.createUserWithEmailAndPassword(email, pass)
             .addOnSuccessListener { onResult(AuthResult.Success) }

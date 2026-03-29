@@ -26,15 +26,14 @@ class LobbyViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LobbyUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun toggleModeSelection(show: Boolean) {
-        _uiState.update { it.copy(showModeSelection = show) }
+    fun logout() {
+        authRepository.logout()
     }
 
     fun startPvPGame(selectedMode: GameMode) {
         val userId = authRepository.currentUser?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-
             val initialBoard = BoardLogic.createInitialBoard(selectedMode)
             val initialState = GameState(
                 mode = selectedMode,
@@ -42,14 +41,9 @@ class LobbyViewModel @Inject constructor(
                 currentTurn = PieceColor.WHITE,
                 status = GameStatus.PLAYING
             )
-
-            val result = gameRepository.createGame(userId, initialState)
-
-            result.onSuccess { id ->
-                _uiState.update { it.copy(isLoading = false, gameId = id, showModeSelection = false) }
-            }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
-            }
+            gameRepository.createGame(userId, initialState)
+                .onSuccess { id -> _uiState.update { it.copy(isLoading = false, gameId = id) } }
+                .onFailure { e -> _uiState.update { it.copy(isLoading = false, error = e.message) } }
         }
     }
 
@@ -57,12 +51,9 @@ class LobbyViewModel @Inject constructor(
         val userId = authRepository.currentUser?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val result = gameRepository.joinGame(gameId, userId)
-            result.onSuccess {
-                _uiState.update { it.copy(isLoading = false, gameId = gameId, isJoined = true) }
-            }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
-            }
+            gameRepository.joinGame(gameId, userId)
+                .onSuccess { _uiState.update { it.copy(isLoading = false, gameId = gameId, isJoined = true) } }
+                .onFailure { e -> _uiState.update { it.copy(isLoading = false, error = e.message) } }
         }
     }
 }
